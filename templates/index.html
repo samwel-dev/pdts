@@ -1,0 +1,1702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDTS — Pre-Arrest Diversion Tracking System</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --navy:#1B3A5C; --police-blue:#102A45; --teal:#2E7D8E;
+    --ink:#1f2a30; --muted:#5a6a70; --line:#d8e3e6; --bg:#f4f7f8;
+    --wash:#eaf4f6; --green:#2f7d55; --greenbg:#e6f3ec;
+    --amber:#8a6318; --amberbg:#fdf2dc; --red:#a33232; --redbg:#fbe9e9;
+    --blue:#2b5d8a; --bluebg:#e7f0f7; --purple:#6b3fa0; --purplebg:#f3eef8;
+    --orange:#C05621; --orangebg:#FEEBC8;
+  }
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+  .wrap{max-width:980px;margin:0 auto;padding:0 20px 60px}
+  header{background:var(--navy);color:#fff;padding:20px 0;border-bottom:3px solid var(--teal)}
+  header .wrap{padding-bottom:0}
+  .brand{font-size:21px;font-weight:700;letter-spacing:0.5px}
+  .sub{font-size:13px;opacity:.9;margin-top:3px}
+  .tag{display:inline-block;margin-top:9px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);padding:3px 9px;border-radius:3px;font-size:11px}
+  nav{background:var(--police-blue);border-top:1px solid rgba(255,255,255,.1)}
+  nav .wrap{display:flex;gap:2px;padding-bottom:0}
+  .nb{background:none;border:none;color:rgba(255,255,255,.7);padding:12px 20px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;border-bottom:3px solid transparent}
+  .nb:hover{color:#fff}
+  .nb.on{color:#fff;border-bottom-color:var(--teal);background:rgba(255,255,255,.08)}
+  .badge{display:inline-block;background:var(--teal);color:#fff;border-radius:9px;padding:0 6px;font-size:11px;margin-left:6px}
+  .view{display:none;padding-top:24px}
+  .view.on{display:block}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:6px;padding:24px;margin-bottom:18px;box-shadow:0 1px 3px rgba(0,0,0,0.02)}
+  .panel h2{font-size:15px;color:var(--navy);margin-bottom:4px}
+  .panel p.lede{font-size:13px;color:var(--muted);margin-bottom:18px}
+  .progress{display:flex;gap:6px;margin-bottom:22px}
+  .pstep{flex:1;height:6px;background:var(--line);border-radius:3px}
+  .pstep.done{background:var(--teal)} .pstep.active{background:var(--navy)}
+  .qnum{display:inline-block;background:var(--wash);color:var(--navy);font-size:11px;font-weight:700;padding:3px 8px;border-radius:3px;margin-bottom:10px;border:1px solid var(--line)}
+  .qtext{font-size:17px;font-weight:600;margin-bottom:6px;line-height:1.4;color:var(--navy)}
+  .qhelp{font-size:13px;color:var(--muted);margin-bottom:18px;padding-left:11px;border-left:3px solid var(--teal)}
+  .opts{display:flex;flex-direction:column;gap:9px}
+  .opt{width:100%;text-align:left;padding:13px 15px;border:1.5px solid var(--line);border-radius:5px;background:#fff;cursor:pointer;font-size:14px;font-family:inherit;color:var(--ink);transition:all 0.15s ease}
+  .opt:hover{border-color:var(--navy);background:var(--wash)}
+  .opt strong{display:block;margin-bottom:2px;color:var(--navy)}
+  .opt span{font-size:12px;color:var(--muted)}
+  .safeguard{background:var(--redbg);border-left:4px solid var(--red);padding:12px 14px;border-radius:0 4px 4px 0;font-size:12.5px;color:var(--red);margin-bottom:18px}
+  .safeguard b{display:block;margin-bottom:2px}
+  .vuln-flag{background:var(--purplebg);border-left:4px solid var(--purple);padding:12px 14px;border-radius:0 4px 4px 0;font-size:12.5px;color:var(--purple);margin-bottom:18px}
+  .vuln-flag b{display:block;margin-bottom:2px}
+  .override-warning{background:var(--orangebg);border-left:4px solid var(--orange);padding:12px 14px;border-radius:0 4px 4px 0;font-size:12.5px;color:var(--orange);margin-bottom:18px}
+  .override-warning b{display:block;margin-bottom:2px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .fld{display:flex;flex-direction:column}
+  .fld.full{grid-column:1/-1}
+  label{font-size:12px;font-weight:600;color:var(--navy);margin-bottom:5px}
+  input,select,textarea{padding:9px 11px;border:1.5px solid var(--line);border-radius:4px;font-size:13.5px;font-family:inherit;color:var(--ink);background:#fff}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--navy)}
+  input:disabled,select:disabled,textarea:disabled{background:var(--wash);color:var(--muted);cursor:not-allowed}
+  textarea{resize:vertical;min-height:60px}
+  .hint{font-size:11px;color:var(--muted);margin-top:4px}
+  .btnrow{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+  .btn{padding:11px 20px;border:none;border-radius:5px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+  .btn-p{background:var(--navy);color:#fff} .btn-p:hover{background:var(--police-blue)}
+  .btn-s{background:#fff;color:var(--muted);border:1.5px solid var(--line)}
+  .btn-s:hover{border-color:var(--muted)}
+  .btn-g{background:var(--green);color:#fff}
+  .btn-d{background:#fff;color:var(--red);border:1.5px solid #f2d0d0}
+  .btn-w{background:var(--amber);color:#fff}
+  .btn-purple{background:var(--purple);color:#fff}
+  .btn-orange{background:var(--orange);color:#fff}
+  .outcome{border-radius:6px;padding:22px;margin-bottom:18px;border-left:5px solid}
+  .oc-formal{background:var(--bluebg);border-color:var(--blue)}
+  .oc-adr{background:var(--greenbg);border-color:var(--green)}
+  .oc-civil{background:var(--amberbg);border-color:var(--amber)}
+  .oc-stop{background:var(--redbg);border-color:var(--red)}
+  .oc-dual{background:linear-gradient(135deg,var(--bluebg) 50%,var(--amberbg) 50%);border-color:var(--purple)}
+  .oc-traffic{background:var(--wash);border-color:var(--teal)}
+  .oc-violent{background:var(--redbg);border-color:var(--red)}
+  .oc-economic{background:var(--orangebg);border-color:var(--orange)}
+  .oc-label{font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:6px}
+  .oc-formal .oc-label{color:var(--blue)} .oc-adr .oc-label{color:var(--green)}
+  .oc-civil .oc-label{color:var(--amber)} .oc-stop .oc-label{color:var(--red)}
+  .oc-dual .oc-label{color:var(--purple)} .oc-traffic .oc-label{color:var(--teal)}
+  .oc-violent .oc-label{color:var(--red)} .oc-economic .oc-label{color:var(--orange)}
+  .oc-title{font-size:20px;font-weight:700;margin-bottom:8px;color:var(--navy)}
+  .oc-body{font-size:14px;margin-bottom:14px}
+  .oc-actions{background:rgba(255,255,255,.7);border-radius:4px;padding:13px 15px;border:1px solid rgba(0,0,0,0.05)}
+  .oc-actions b{font-size:12px;display:block;margin-bottom:7px;color:var(--navy)}
+  .oc-actions ol{margin-left:17px;font-size:13px}
+  .oc-actions li{margin-bottom:4px}
+  .trail{background:#fff;border:1px solid var(--line);border-radius:6px;padding:18px 22px;margin-bottom:16px}
+  .trail h3{font-size:12px;color:var(--navy);margin-bottom:12px;letter-spacing:0.5px}
+  .trailitem{display:flex;gap:10px;font-size:13px;padding:7px 0;border-bottom:1px solid var(--wash)}
+  .trailitem:last-child{border-bottom:none}
+  .tq{color:var(--muted);flex:1} .ta{font-weight:600;color:var(--navy);white-space:nowrap}
+  .saved{background:var(--greenbg);border:1px solid var(--green);color:var(--green);border-radius:6px;padding:14px 18px;font-size:13.5px;font-weight:600;margin-bottom:16px}
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:6px;padding:16px 18px}
+  .card .n{font-size:30px;font-weight:700;color:var(--navy);line-height:1.1}
+  .card .l{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.35}
+  .card.hl{background:var(--navy);border-color:var(--navy)}
+  .card.hl .n{color:#fff} .card.hl .l{color:rgba(255,255,255,.85)}
+  .bars{background:#fff;border:1px solid var(--line);border-radius:6px;padding:20px 22px;margin-bottom:18px}
+  .bars h3{font-size:13px;color:var(--navy);margin-bottom:14px}
+  .bar{margin-bottom:11px}
+  .bl{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px}
+  .bl b{color:var(--navy)}
+  .btrack{height:9px;background:var(--wash);border-radius:5px;overflow:hidden}
+  .bfill{height:100%;border-radius:5px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{background:var(--navy);color:#fff;text-align:left;padding:9px 10px;font-size:11px;font-weight:700}
+  td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  tr:nth-child(even) td{background:var(--wash)}
+  .pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:700;white-space:nowrap}
+  .p-adr{background:var(--greenbg);color:var(--green)}
+  .p-civil{background:var(--amberbg);color:var(--amber)}
+  .p-formal{background:var(--bluebg);color:var(--blue)}
+  .p-stop{background:var(--redbg);color:var(--red)}
+  .p-dual{background:var(--purplebg);color:var(--purple)}
+  .p-traffic{background:var(--wash);color:var(--teal)}
+  .p-violent{background:var(--redbg);color:var(--red)}
+  .p-economic{background:var(--orangebg);color:var(--orange)}
+  .empty{text-align:center;padding:44px 20px;color:var(--muted);font-size:14px}
+  .empty b{display:block;color:var(--navy);font-size:16px;margin-bottom:6px}
+  .note{background:var(--amberbg);border-left:3px solid var(--amber);padding:12px 15px;border-radius:0 4px 4px 0;font-size:12.5px;color:var(--amber);margin-bottom:16px}
+  .note b{display:block;margin-bottom:3px}
+  .foot{text-align:center;font-size:12px;color:var(--muted);margin-top:26px;line-height:1.7}
+  .foot b{color:var(--navy)}
+  .hidden{display:none !important}
+  .station-link{color:var(--teal);cursor:pointer;font-size:11px;text-decoration:underline;margin-left:10px}
+  .search-bar{width:100%;padding:10px 14px;border:1.5px solid var(--line);border-radius:5px;font-size:13.5px;margin-bottom:12px;font-family:inherit}
+  .search-bar:focus{outline:none;border-color:var(--navy)}
+  .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:1000;cursor:pointer;}
+  .modal-content{background:#fff;padding:30px;border-radius:6px;width:90%;max-width:650px;max-height:90vh;overflow-y:auto;box-shadow:0 4px 6px rgba(0,0,0,0.1);cursor:default;}
+  .modal-content h3{color:var(--navy);margin-bottom:15px;text-align:center;text-transform:uppercase;font-size:16px}
+  .modal-content p{font-size:13px;margin-bottom:10px;line-height:1.6}
+  .party-row{display:flex; gap:5px; margin-bottom:5px; align-items:center;}
+  .party-row input{flex:1; padding:6px 10px; font-size:12px;}
+  .signature{display:flex;justify-content:space-between;margin-top:30px;font-size:12px}
+  .signature div{width:45%;border-top:1px solid #000;padding-top:5px;text-align:center}
+  .stamp-box{border:2px dashed #ccc; width:120px; height:120px; display:flex; align-items:center; justify-content:center; color:#ccc; font-weight:bold; margin-top:20px; float:right; font-size:10px; text-align:center;}
+  .checkbox-row{display:flex;align-items:center;gap:8px;font-size:13px;margin-top:6px}
+  .checkbox-row input{width:auto}
+  @media(max-width:700px){.grid{grid-template-columns:1fr}.cards{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="brand">PDTS — Pre-Arrest Diversion Tracking System</div>
+    <div class="sub">Station Front-Desk Triage · Applied Before an Occurrence Book Entry is Made</div>
+    <div class="tag" id="station-tag">PILOT BUILD · Select Station to Begin
+      <span class="station-link" onclick="openStationModal()">Change Station</span>
+    </div>
+  </div>
+</header>
+
+<nav>
+  <div class="wrap">
+    <button type="button" class="nb on" id="nb-desk" onclick="go('desk')">Triage Desk</button>
+    <button type="button" class="nb" id="nb-dash" onclick="go('dash')">Commander's View <span class="badge" id="cnt">0</span></button>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<div id="stationModal" class="modal hidden">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <h3>Select Your Station</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:15px;">This determines the sub-county and region for all records. It is set once per workstation.</p>
+    <select id="stationSelect" style="width:100%;padding:12px;font-size:14px;margin-bottom:15px;">
+      <option value="">— Loading stations —</option>
+    </select>
+    <div style="display:flex;justify-content:flex-end;">
+      <button type="button" class="btn btn-p" onclick="setStation()">Confirm Station</button>
+    </div>
+  </div>
+</div>
+
+<div class="view on" id="v-desk">
+  <div class="panel" id="p-intake">
+    <h2>Complaint Intake</h2>
+    <p class="lede">Recorded at the front desk. No Occurrence Book (OB) entry is made until triage is complete.</p>
+    <div class="grid">
+      <div class="fld"><label>Case Reference (Auto)</label><input id="ref" readonly></div>
+      <div class="fld"><label>Officer Name / Badge No.</label><input id="officer" required placeholder="e.g. Cpl. John Doe / 12345"></div>
+      <div class="fld"><label>Offence Category</label>
+        <select id="offence_category" onchange="onCategoryChange()">
+          <option value="">— select category —</option>
+          <option value="sexual">Sexual Offence</option>
+          <option value="gbv">Gender-Based Violence</option>
+          <option value="child">Offence Against a Child</option>
+          <option value="violent">Serious Violent Offence</option>
+          <option value="economic">Economic / White-Collar Crime</option>
+          <option value="petty">Petty / Minor Offence</option>
+          <option value="civil">Civil / Family / Land Dispute</option>
+          <option value="traffic">Traffic Offence</option>
+          <option value="other">Other</option>
+        </select></div>
+      <div class="fld"><label>Specific Offence</label>
+        <select id="offence_detail" onchange="onDetailChange()">
+          <option value="">— select category first —</option>
+        </select></div>
+      <div class="fld" id="fld-other" style="display:none;"><label>Please Specify the Offence</label><input id="other_specify" placeholder="e.g. Unlawful assembly, Loitering"><div class="hint">Required when "Other" is selected.</div></div>
+      <div class="fld"><label>Approximate Value at Issue (KES)</label>
+        <input id="value" type="number" placeholder="e.g. 500" min="0">
+        <div class="hint" id="value-hint">Enter 0 where no monetary value applies.</div></div>
+      <div class="fld"><label>Exact Age of Person Complained Against (years)</label>
+        <input id="exact_age" type="number" placeholder="e.g. 17" min="0" max="120" oninput="deriveAgeBand()">
+        <div class="hint" id="age-band-display">Age band will appear here.</div></div>
+      <div class="fld"><label>Gender of Person Complained Against</label>
+        <select id="gender"><option value="">— select —</option>
+          <option>Male</option><option>Female</option><option>Other or Not stated</option></select></div>
+      <div class="fld"><label>Vulnerability Flags (if any)</label>
+        <select id="vulnerability" onchange="checkVulnerability()">
+          <option value="">None identified</option>
+          <option>Elderly (65+)</option>
+          <option>Person with disability</option>
+          <option>Mental illness or psychosocial disability</option>
+          <option>Visibly sick or medical condition</option>
+          <option>Pregnant</option>
+        </select></div>
+      <div class="fld"><label>Station Sub-County (Auto)</label><input id="sub_county" readonly style="background:var(--wash);"></div>
+      <div class="fld full">
+        <div class="checkbox-row">
+          <input type="checkbox" id="anonymous_informant">
+          <label for="anonymous_informant" style="margin-bottom:0;cursor:pointer;">Complaint made by third party / informant (not the victim)</label>
+        </div>
+      </div>
+      <div class="fld full" id="fld-adr-fields" style="display:none;">
+        <label>ADR Suitability Assessment</label>
+        <div style="background:var(--wash);padding:12px;border-radius:4px;border:1px solid var(--line);">
+          <p style="font-size:11px;color:var(--muted);margin-bottom:8px;">These fields appear only for ADR-eligible cases. They are not shown for serious offences, civil disputes, or traffic.</p>
+          <label style="font-size:11px;font-weight:700;color:var(--red);">Complainant Willingness (REQUIRED — victim has the right to refuse ADR under Article 50(9))</label>
+          <select id="complainant_willingness" style="margin-bottom:6px;">
+            <option value="">— select —</option>
+            <option>Willing to participate in ADR</option>
+            <option>Wants case taken to OB (refuses ADR)</option>
+            <option>Indifferent</option>
+          </select>
+          <label style="font-size:11px;margin-top:6px;">Offender Behaviour</label>
+          <select id="offender_behaviour" style="margin-bottom:6px;">
+            <option value="">— select —</option>
+            <option>Cooperative</option><option>Resistant</option><option>Hostile</option>
+            <option>Fled</option><option>Resisted Arrest</option><option>Obstructed Officer</option>
+          </select>
+          <label style="font-size:11px;">Prior Diversion History</label>
+          <select id="prior_history" style="margin-bottom:6px;">
+            <option value="">— select —</option>
+            <option>First offence</option><option>Previously diverted</option><option>Repeat offender</option>
+          </select>
+          <label style="font-size:11px;">Offender Willingness</label>
+          <select id="offender_willingness">
+            <option value="">— select —</option>
+            <option>Willing to participate</option><option>Unwilling</option><option>Indifferent</option>
+          </select>
+        </div>
+      </div>
+      <div class="fld full"><label>Brief Description — NO NAMES</label>
+        <textarea id="desc" placeholder="e.g. Neighbour's cattle entered maize plot; crop damage alleged."></textarea>
+        <div class="hint">Anonymised at entry. Names must never be entered in this field to comply with the Data Protection Act.</div></div>
+    </div>
+    <div class="btnrow">
+      <button type="button" class="btn btn-p" onclick="startTriage()">Begin Triage →</button>
+      <button type="button" class="btn btn-s" onclick="loadDemo()">Load Demo Case</button>
+      <span id="draft-indicator" style="font-size:11px;color:var(--muted);align-self:center;margin-left:10px;"></span>
+    </div>
+  </div>
+
+  <div class="panel hidden" id="p-triage">
+    <div class="progress"><div class="pstep" id="ps0"></div><div class="pstep" id="ps1"></div></div>
+    <div class="qnum" id="qnum"></div>
+    <div class="qtext" id="qtext"></div>
+    <div class="qhelp" id="qhelp"></div>
+    <div class="opts" id="opts"></div>
+    <div class="btnrow"><button type="button" class="btn btn-s" onclick="resetDesk()">← Start Over</button></div>
+  </div>
+
+  <div class="hidden" id="p-result">
+    <div class="saved" id="savedmsg"></div>
+    <div class="outcome" id="oc">
+      <div class="oc-label" id="oclabel"></div>
+      <div class="oc-title" id="octitle"></div>
+      <div class="oc-body" id="ocbody"></div>
+      <div class="oc-actions"><b>ACTIONS AT THE DESK</b><ol id="ocactions"></ol></div>
+    </div>
+    <div class="panel" id="p-consent-actions" style="display:none; border-left:4px solid var(--teal);">
+      <h2>Consent & Communication</h2>
+      <p class="lede">Generate, print, or send the consent form and referral letter to the parties involved.</p>
+      <div class="btnrow">
+        <button type="button" class="btn btn-p" onclick="generateConsent()" id="btn-consent">📄 Generate Consent Form</button>
+        <button type="button" class="btn btn-purple" id="btn-referral" onclick="generateReferralLetter()" id="btn-referral">📨 Generate Referral Letter</button>
+        <button type="button" class="btn btn-w" onclick="sendSMS()" id="btn-sms">📱 Send SMS Reminder</button>
+        <button type="button" class="btn btn-s" onclick="sendEmail()" id="btn-email">✉️ Send Email Reminder</button>
+      </div>
+    </div>
+    <div class="panel" id="p-override" style="display:none; border-left:4px solid var(--orange);">
+      <h2>Override Note — Required</h2>
+      <p class="lede">You have chosen a route different from the system's recommendation. A written reason is required. This will be logged with your name and timestamp.</p>
+      <textarea id="override_note" placeholder="Explain why you are overriding the system's recommendation..."></textarea>
+      <div class="btnrow"><button type="button" class="btn btn-orange" onclick="submitOverride()">Submit Override</button></div>
+    </div>
+    <div class="trail"><h3>DECISION TRAIL — WHY THIS ROUTE WAS CHOSEN</h3><div id="trail"></div></div>
+    <div class="btnrow">
+      <button type="button" class="btn btn-p" onclick="resetDesk()">Next Complaint</button>
+      <button type="button" class="btn btn-s" onclick="go('dash')">View Log →</button>
+    </div>
+  </div>
+</div>
+
+<div class="view" id="v-dash">
+  <div id="dash-empty" class="panel">
+    <div class="empty"><b>No complaints triaged yet</b>Decisions recorded at the triage desk will appear here.</div>
+  </div>
+  <div id="dash-body" class="hidden">
+    <div class="panel" id="reminder-section" style="display:none; border-left:4px solid var(--amber);">
+      <h2>14-Day Pending Reviews</h2>
+      <div id="reminder-list"></div>
+    </div>
+    <div class="cards">
+      <div class="card"><div class="n" id="m-total">0</div><div class="l">Complaints Triaged</div></div>
+      <div class="card hl"><div class="n" id="m-div">0</div><div class="l">Diverted Before OB Entry</div></div>
+      <div class="card"><div class="n" id="m-rate">0%</div><div class="l">Diversion Rate</div></div>
+      <div class="card"><div class="n" id="m-cost">KES 0</div><div class="l">Est. Custodial Cost Avoided</div></div>
+    </div>
+    <div class="note"><b>How the cost figure is calculated</b>Cost avoided = KES 192 per inmate per day × 30 days per case diverted. Source: PS Salome Muhia, testimony to Parliament, April 2025.</div>
+    <div class="bars"><h3>WHERE COMPLAINTS WERE ROUTED</h3><div id="barwrap"></div></div>
+    <div class="panel">
+      <h2>Diversion Log</h2>
+      <p class="lede">Search below or scroll through all records. Every decision is logged.</p>
+      <input type="text" class="search-bar" id="searchBar" placeholder="Search by reference, offence, or officer..." oninput="applySearch()">
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>REF</th><th>DATE</th><th>CATEGORY</th><th>DETAIL</th><th>AGE</th><th>GENDER</th><th>ROUTE</th><th>OB</th><th>FOLLOW-UP</th></tr></thead>
+          <tbody id="logbody"></tbody>
+        </table>
+      </div>
+      <div class="btnrow">
+        <button type="button" class="btn btn-g" onclick="exportCSV()">⭳ Export Full Log (CSV)</button>
+        <button type="button" class="btn btn-purple" onclick="exportStationRegister()">📊 Export Station Register (Policy Data)</button>
+        <button type="button" class="btn btn-w" id="btn-backup" onclick="backupDatabase()">💾 Backup Database</button>
+        <button type="button" class="btn btn-d" onclick="clearAll()">Clear All Records</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <div class="foot">
+    <b>Every decision is logged — including those routed to the formal process.</b><br>
+    Records are saved on the station server via SQLite.<br><br>
+    PDTS Prototype · Kenya Police Service Front-Desk Triage Framework · 2026 · <span id="app-version" style="color:#8a99a0;">v1.0.0</span></div>
+</div>
+
+<div id="consentModal" class="modal hidden" onclick="if(event.target===this) closeModal(event)">
+  <div class="modal-content" id="printableConsent" onclick="event.stopPropagation()">
+    <h3>PRE-ARREST DIVERSION AND MEDIATION CONSENT FORM</h3>
+    <p><strong>Case Reference:</strong> <span id="c-ref"></span> | <strong>Date:</strong> <span id="c-date"></span></p>
+    <p><strong>Nature of Complaint:</strong> <span id="c-offence"></span></p>
+    <p><strong>Recommended Route:</strong> <span id="c-route"></span></p>
+    <div style="margin:15px 0;">
+        <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:5px;">Complainant(s)</label>
+        <div id="complainant-list"></div>
+        <button type="button" class="btn btn-s" style="padding:4px 8px; font-size:11px; margin-top:5px;" onclick="addParty('complainant')">+ Add Complainant</button>
+    </div>
+    <div style="margin:15px 0;">
+        <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:5px;">Respondent(s)</label>
+        <div id="respondent-list"></div>
+        <button type="button" class="btn btn-s" style="padding:4px 8px; font-size:11px; margin-top:5px;" onclick="addParty('respondent')">+ Add Respondent</button>
+    </div>
+    <p>I, the undersigned, voluntarily agree to resolve this dispute through the recommended route under Article 159(2)(c) of the Constitution of Kenya.</p>
+    <p>I understand that:</p>
+    <ol style="margin-left:20px; font-size:13px; margin-bottom:10px;">
+      <li>This process is voluntary and I may withdraw at any time.</li>
+      <li>If mediation fails or the agreement is breached, the matter may be escalated to formal criminal proceedings.</li>
+      <li>This agreement does not constitute an admission of guilt.</li>
+    </ol>
+    <p>I agree to attend the scheduled mediation session and to abide by the outcome reached in good faith.</p>
+    <div class="stamp-box">OFFICIAL POLICE STAMP<br>(Mandatory for Validity)</div>
+    <div class="signature" style="clear:both;">
+      <div>Complainant Signature / Thumbprint</div>
+      <div>Respondent Signature / Thumbprint</div>
+    </div>
+    <div class="signature" style="margin-top:20px;">
+      <div>Police Officer (Name & Rank)</div>
+      <div>Date</div>
+    </div>
+    <div style="margin-top:20px; font-size:10px; color:#666; text-align:center; border-top:1px solid #ccc; padding-top:10px;">
+      This document is invalid if altered. Case Ref: <span id="c-ref-footer"></span>
+    </div>
+    <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end;">
+      <button type="button" class="btn btn-s" onclick="closeModal(event)">Close</button>
+      <button type="button" class="btn btn-p" onclick="printConsent()">🖨️ Print Form</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_URL = window.location.origin + '/api/records';
+const STATIONS_URL = window.location.origin + '/api/stations';
+const PER_DIEM = 192, DAYS = 30;
+const DRAFT_KEY = 'pdts_draft_v2';
+const OFFICER_KEY = 'pdts_officer_v1';
+
+// HARDENED: HTML escaping to prevent XSS in log rendering
+const H = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+}[c]));
+
+let S = {}, step = 0, trail = [], station = null;
+let partyCounter = { complainant: 0, respondent: 0 };
+let allRows = [];
+
+const OFFENCE_TREE = {
+  sexual: {
+    label: 'Sexual Offence',
+    detail: ['Defilement','Rape','Attempted Rape','Indecent Assault','Sexual Harassment'],
+    serious: true, civilEligible: false, adrEligible: false, traffic: false, valueRelevant: false
+  },
+  gbv: {
+    label: 'Gender-Based Violence',
+    detail: ['Domestic Violence (physical)','Emotional / Psychological Abuse','Economic Abuse','Stalking / Harassment'],
+    serious: true, civilEligible: false, adrEligible: false, traffic: false, valueRelevant: false
+  },
+  child: {
+    label: 'Offence Against a Child',
+    detail: ['Child Abuse','Child Neglect','Child Trafficking','Child Labour','Child Abandonment'],
+    serious: true, civilEligible: false, adrEligible: false, traffic: false, valueRelevant: false
+  },
+  violent: {
+    label: 'Serious Violent Offence',
+    detail: ['Robbery','Robbery with Violence','Armed Robbery','Murder','Attempted Murder','Kidnapping','Assault Causing Grievous Harm','Gang Offence'],
+    serious: true, civilEligible: false, adrEligible: false, traffic: false, valueRelevant: false
+  },
+  economic: {
+    label: 'Economic / White-Collar Crime',
+    detail: ['Obtaining by False Pretences','Money Fraud','Cheque Fraud','Cybercrime','Forgery','Embezzlement','Bribery'],
+    serious: false, civilEligible: false, adrEligible: true, traffic: false, valueRelevant: true
+  },
+  petty: {
+    label: 'Petty / Minor Offence',
+    detail: ['Petty Theft (low-value item)','Malicious Damage (value < 20,000)','Drunk and Disorderly','Loitering','Simple Assault (no injury)'],
+    serious: false, civilEligible: false, adrEligible: true, traffic: false, valueRelevant: true
+  },
+  civil: {
+    label: 'Civil / Family / Land Dispute',
+    detail: ['Child Support / Maintenance','Family / Domestic Argument (non-violent)','Cattle Trespass / Crop Damage','Neighbour / Boundary Dispute','Debt Dispute'],
+    serious: false, civilEligible: true, adrEligible: false, traffic: false, valueRelevant: true
+  },
+  traffic: {
+    label: 'Traffic Offence',
+    detail: ['Minor Traffic Offence (instant fine)','Driving without valid licence','Expired insurance'],
+    serious: false, civilEligible: false, adrEligible: false, traffic: true, valueRelevant: false
+  },
+  other: {
+    label: 'Other',
+    detail: [],
+    serious: false, civilEligible: false, adrEligible: false, traffic: false, valueRelevant: true
+  }
+};
+
+const LEGAL_KB = {
+  'Child Support / Maintenance': {
+    office: "Children's Officer, Directorate of Children's Services",
+    statute: "Sections 24, 90 and 111 of the Children Act, 2022",
+    action: "Parental responsibility is joint. The Children's Court may make maintenance orders.",
+    form: "Form JA 16 (Maintenance Application)",
+    contact: "Local Children's Office"
+  },
+  'Family / Domestic Argument (non-violent)': {
+    office: "Children's Officer or Probation Officer",
+    statute: "Section 8 of the Children Act, 2022",
+    action: "Where children are affected, the Children's Officer must conduct an assessment.",
+    form: "Referral to Children's Office",
+    contact: "Local Children's Office"
+  },
+  'Cattle Trespass / Crop Damage': {
+    office: "National Land Commission or Land Registrar",
+    statute: "Section 18 of the Land Registration Act, 2012",
+    action: "Boundary disputes must first be determined by the Land Registrar.",
+    form: "Application to Land Registrar",
+    contact: "County Land Registrar / NLC"
+  },
+  'Neighbour / Boundary Dispute': {
+    office: "National Land Commission or Land Registrar",
+    statute: "Section 18(2) of the Land Registration Act, 2012; Article 67(2)(e)",
+    action: "The court shall not entertain boundary disputes unless determined by the Land Registrar.",
+    form: "Application to Land Registrar",
+    contact: "County Land Registrar / NLC"
+  },
+  'Debt Dispute': {
+    office: "Small Claims Court or Accredited Mediator",
+    statute: "Small Claims Court Act, 2016",
+    action: "Debt disputes are civil matters. Small Claims Court handles claims up to KES 1,000,000.",
+    form: "Statement of Claim (Small Claims Court)",
+    contact: "Local Small Claims Court"
+  },
+  'Minor Traffic Offence (instant fine)': {
+    office: "Traffic Department",
+    statute: "Section 117 of the Traffic Act (Cap. 403)",
+    action: "Instant fines range from KES 500 to KES 10,000.",
+    form: "Police Notification of Traffic Offence",
+    contact: "Station Traffic Department"
+  }
+};
+
+window.onload = async () => {
+  // Fetch and display app + schema version
+  try {
+    const vr = await fetch('/api/version');
+    if (vr.ok) {
+      const v = await vr.json();
+      const el = document.getElementById('app-version');
+      if (el) el.textContent = 'v' + v.app_version + ' · schema ' + v.schema_version;
+    }
+  } catch(e) { /* non-fatal */ }
+
+  await loadStations();
+  // Officer name remembered across sessions
+  const savedOfficer = localStorage.getItem(OFFICER_KEY);
+  if (savedOfficer) document.getElementById('officer').value = savedOfficer;
+  restoreDraft();
+  document.getElementById('ref').value = 'Select station first';
+  setInterval(saveDraft, 20000);
+  if (!station) document.getElementById('stationModal').classList.remove('hidden');
+};
+
+async function loadStations() {
+  try {
+    const res = await fetch(STATIONS_URL);
+    const stations = await res.json();
+    const sel = document.getElementById('stationSelect');
+    sel.innerHTML = '<option value="">— select station —</option>' +
+      stations.map(s => `<option value="${s.station_id}" data-sub="${s.sub_county}" data-region="${s.region}" data-code="${s.station_code}">${s.station_name}</option>`).join('');
+  } catch(e) {
+    document.getElementById('stationSelect').innerHTML = '<option value="">Error loading stations</option>';
+  }
+}
+
+function openStationModal() {
+  document.getElementById('stationModal').classList.remove('hidden');
+}
+
+async function setStation() {
+  const sel = document.getElementById('stationSelect');
+  const opt = sel.options[sel.selectedIndex];
+  if(!opt.value){ alert('Select a station.'); return; }
+  station = {
+    id: opt.value,
+    code: opt.dataset.code,
+    sub_county: opt.dataset.sub,
+    region: opt.dataset.region,
+    name: opt.textContent
+  };
+  document.getElementById('stationModal').classList.add('hidden');
+  document.getElementById('station-tag').innerHTML = station.name + ' · ' + station.sub_county + ', ' + station.region +
+    ' <span class="station-link" onclick="openStationModal()">Change Station</span>';
+  document.getElementById('sub_county').value = station.sub_county;
+  document.getElementById('ref').value = await refCode();
+  await refresh();
+}
+
+// ============================================================
+// DRAFT AUTOSAVE
+// ============================================================
+function saveDraft() {
+  if (!station) return;
+  const draft = {
+    officer: document.getElementById('officer').value,
+    offence_category: document.getElementById('offence_category').value,
+    offence_detail: document.getElementById('offence_detail').value,
+    other_specify: document.getElementById('other_specify').value,
+    value: document.getElementById('value').value,
+    exact_age: document.getElementById('exact_age').value,
+    gender: document.getElementById('gender').value,
+    vulnerability: document.getElementById('vulnerability').value,
+    desc: document.getElementById('desc').value,
+    anonymous_informant: document.getElementById('anonymous_informant').checked,
+    offender_behaviour: document.getElementById('offender_behaviour').value,
+    prior_history: document.getElementById('prior_history').value,
+    offender_willingness: document.getElementById('offender_willingness').value,
+    complainant_willingness: document.getElementById('complainant_willingness').value,
+    saved_at: new Date().toISOString()
+  };
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    localStorage.setItem(OFFICER_KEY, draft.officer);
+    document.getElementById('draft-indicator').textContent = 'Draft saved ' + new Date().toLocaleTimeString();
+  } catch(e) {}
+}
+
+function restoreDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    if (d.officer) document.getElementById('officer').value = d.officer;
+    if (d.offence_category) {
+      document.getElementById('offence_category').value = d.offence_category;
+      onCategoryChange();
+    }
+    if (d.offence_detail) document.getElementById('offence_detail').value = d.offence_detail;
+    if (d.other_specify) document.getElementById('other_specify').value = d.other_specify;
+    if (d.value) document.getElementById('value').value = d.value;
+    if (d.exact_age) { document.getElementById('exact_age').value = d.exact_age; deriveAgeBand(); }
+    if (d.gender) document.getElementById('gender').value = d.gender;
+    if (d.vulnerability) document.getElementById('vulnerability').value = d.vulnerability;
+    if (d.desc) document.getElementById('desc').value = d.desc;
+    if (d.anonymous_informant) document.getElementById('anonymous_informant').checked = true;
+    if (d.offender_behaviour) document.getElementById('offender_behaviour').value = d.offender_behaviour;
+    if (d.prior_history) document.getElementById('prior_history').value = d.prior_history;
+    if (d.offender_willingness) document.getElementById('offender_willingness').value = d.offender_willingness;
+    if (d.complainant_willingness) document.getElementById('complainant_willingness').value = d.complainant_willingness;
+    document.getElementById('draft-indicator').textContent = 'Restored draft from ' + new Date(d.saved_at).toLocaleString();
+  } catch(e) {}
+}
+
+function clearDraft() {
+  try { localStorage.removeItem(DRAFT_KEY); } catch(e) {}
+}
+
+// ============================================================
+// FORM LOGIC
+// ============================================================
+function onCategoryChange() {
+  const cat = document.getElementById('offence_category').value;
+  const detailSel = document.getElementById('offence_detail');
+  const otherFld = document.getElementById('fld-other');
+  const adrFld = document.getElementById('fld-adr-fields');
+  const valueInput = document.getElementById('value');
+  const valueHint = document.getElementById('value-hint');
+
+  detailSel.innerHTML = '<option value="">— select specific offence —</option>';
+  if (cat && OFFENCE_TREE[cat]) {
+    OFFENCE_TREE[cat].detail.forEach(d => {
+      detailSel.innerHTML += `<option>${d}</option>`;
+    });
+  }
+  if (cat === 'other') {
+    otherFld.style.display = 'flex';
+    detailSel.innerHTML = '<option value="">— specify below —</option>';
+  } else {
+    otherFld.style.display = 'none';
+    document.getElementById('other_specify').value = '';
+  }
+
+  if (cat === 'violent' || cat === 'sexual' || cat === 'gbv' || cat === 'child') {
+    valueInput.disabled = true;
+    valueInput.value = '';
+    valueHint.textContent = 'Not applicable for this offence category.';
+  } else {
+    valueInput.disabled = false;
+    valueHint.textContent = 'Enter 0 where no monetary value applies.';
+  }
+  adrFld.style.display = 'none';
+}
+
+function onDetailChange() {
+  const cat = document.getElementById('offence_category').value;
+  const detail = document.getElementById('offence_detail').value;
+  const adrFld = document.getElementById('fld-adr-fields');
+  if ((cat === 'petty' || cat === 'economic') && detail) {
+    adrFld.style.display = 'block';
+  } else {
+    adrFld.style.display = 'none';
+  }
+}
+
+function deriveAgeBand() {
+  const age = parseInt(document.getElementById('exact_age').value);
+  const display = document.getElementById('age-band-display');
+  if (isNaN(age) || age < 0) { display.textContent = 'Age band will appear here.'; return; }
+  if (age > 120) { display.textContent = '⚠ Age exceeds 120 — please verify.'; display.style.color = 'var(--red)'; return; }
+  display.style.color = 'var(--muted)';
+  let band;
+  if (age < 12) band = 'Child (under 12) — not criminally responsible';
+  else if (age < 18) band = 'Minor (12–17) — Children Act applies';
+  else if (age < 25) band = 'Youth (18–24)';
+  else if (age < 65) band = 'Adult (25–64)';
+  else band = 'Elderly (65+)';
+  display.textContent = 'Age band: ' + band;
+}
+
+function checkVulnerability() {
+  const vuln = document.getElementById('vulnerability').value;
+  if (vuln) {
+    alert('Vulnerable person detected: ' + vuln + '. The Public Prosecutor has a mandatory obligation to consider diversion irrespective of offence severity (ODPP Diversion Policy).');
+  }
+}
+
+// ============================================================
+// API
+// ============================================================
+async function fetchData() {
+  try { const r = await fetch(API_URL); allRows = await r.json(); return allRows; }
+  catch(e) { return []; }
+}
+
+async function addRecord(rec) {
+  // HARDENED: throws on HTTP error so caller can block the workflow
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(rec)
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`HTTP ${res.status}: ${body}`);
+  }
+}
+
+async function updateRecord(ref, notes) {
+  try {
+    await fetch(API_URL + '/' + encodeURIComponent(ref), {
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        resolution_notes: notes,
+        resolved_at: new Date().toISOString(),
+        action: notes.startsWith('RESOLVED') ? 'RESOLVED' : 'ESCALATED'
+      })
+    });
+  } catch(e) { console.error(e); }
+}
+
+async function refCode() {
+  if (!station) return 'Select station first';
+  const data = await fetchData();
+  const stationRows = data.filter(r => r.station_id === station.id);
+  const next = String(stationRows.length + 1).padStart(3, '0');
+  return 'PDTS/' + station.code + '/2026/' + next;
+}
+
+function today(){ return new Date().toISOString().slice(0,10); }
+function addDays(date, days) {
+  const d = new Date(date); d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0,10);
+}
+function nowISO() { return new Date().toISOString(); }
+
+async function go(v){
+  document.querySelectorAll('.view').forEach(e=>e.classList.remove('on'));
+  document.querySelectorAll('.nb').forEach(e=>e.classList.remove('on'));
+  document.getElementById('v-'+v).classList.add('on');
+  document.getElementById('nb-'+v).classList.add('on');
+  if(v==='dash') {
+    await refresh();
+    if(window.dashInterval) clearInterval(window.dashInterval);
+    window.dashInterval = setInterval(async () => {
+        if(document.getElementById('v-dash').classList.contains('on')) await refresh();
+    }, 5000);
+  } else {
+    if(window.dashInterval) clearInterval(window.dashInterval);
+  }
+  window.scrollTo(0,0);
+}
+
+function loadDemo(){
+  if (!station) {
+    const sel = document.getElementById('stationSelect');
+    if (sel.options.length > 1) { sel.selectedIndex = 1; setStation(); }
+    else { alert('Please select a station first.'); return; }
+  }
+  document.getElementById('offence_category').value = 'civil';
+  onCategoryChange();
+  document.getElementById('offence_detail').value = 'Cattle Trespass / Crop Damage';
+  onDetailChange();
+  document.getElementById('value').value = 0;
+  document.getElementById('exact_age').value = 35;
+  deriveAgeBand();
+  document.getElementById('gender').value = 'Male';
+  document.getElementById('vulnerability').value = '';
+  document.getElementById('desc').value = "Neighbour's cattle entered maize plot; crop damage alleged.";
+  if (!document.getElementById('officer').value) {
+    document.getElementById('officer').value = 'Cpl. J. Doe / 12345';
+  }
+}
+
+// ============================================================
+// START TRIAGE — MAIN ROUTING
+// ============================================================
+async function startTriage(){
+  if (!station) { alert('Please select your station first.'); return; }
+  const _off = (document.getElementById('officer').value || '').trim();
+  if (!_off) {
+    alert('Officer Name / Badge No. is required before triage can begin.');
+    document.getElementById('officer').focus();
+    return;
+  }
+  const cat = document.getElementById('offence_category').value;
+  const detail = document.getElementById('offence_detail').value;
+  const otherSpec = document.getElementById('other_specify').value.trim();
+
+  if (!cat) { alert('Select the offence category.'); return; }
+  // HARDENED: data protection — refuse phone numbers, IDs, or emails in description
+  const descRaw = document.getElementById('desc').value || '';
+  if (/\d{7,}|\S+@\S+/.test(descRaw)) {
+    alert('Remove phone numbers, ID numbers, and email addresses from the description. Names and personal identifiers must not be stored.');
+    return;
+  }
+  if (cat === 'other' && !otherSpec) { alert('Please specify the offence.'); return; }
+  if (cat !== 'other' && !detail) { alert('Select the specific offence.'); return; }
+
+  const exactAge = parseInt(document.getElementById('exact_age').value) || 0;
+  if (exactAge < 1 || exactAge > 120) {
+    alert('Enter a valid age between 1 and 120. Estimate if unknown.');
+    return;
+  }
+
+  S = {
+    ref: document.getElementById('ref').value,
+    station_id: station.id,
+    officer: document.getElementById('officer').value || 'Not stated',
+    offence_category: cat,
+    offence_detail: cat === 'other' ? otherSpec : detail,
+    other_specify: otherSpec,
+    value: document.getElementById('value').value || '0',
+    exact_age: exactAge,
+    age_band: getAgeBand(exactAge),
+    gender: document.getElementById('gender').value || 'Not stated',
+    vulnerability: document.getElementById('vulnerability').value || '',
+    sub_county: station.sub_county,
+    desc: document.getElementById('desc').value || '—',
+    anonymous_informant: document.getElementById('anonymous_informant').checked ? 'Yes' : 'No',
+    isMinor: exactAge > 0 && exactAge < 18,
+    isChild: exactAge > 0 && exactAge < 12,
+    isVulnerable: !!document.getElementById('vulnerability').value,
+    complainant_willingness: document.getElementById('complainant_willingness').value || 'Not stated'
+  };
+  // Remember officer name
+  try { localStorage.setItem(OFFICER_KEY, S.officer); } catch(e) {}
+
+  trail = [];
+  const tree = OFFENCE_TREE[cat];
+
+  // HARDENED: child under 12 - immediate child protection route
+  if (exactAge > 0 && exactAge < 12) {
+    trail.push({q: 'Person is under 12 - not criminally responsible', a: 'Child Protection'});
+    return finish('child');
+  }
+
+  // 1. Serious offences → Safeguard Gate
+  if (tree && tree.serious) {
+    trail.push({q:'Auto-route: Serious offence detected (' + S.offence_detail + ')', a:'Safeguard Gate'});
+    return finish('stop');
+  }
+
+  // 2. Traffic → Traffic Department
+  if (tree && tree.traffic) {
+    trail.push({q:'Auto-route: Traffic offence', a:'Traffic Department'});
+    return finish('traffic');
+  }
+
+  // 3. Civil → Civil Referral
+  if (tree && tree.civilEligible) {
+    trail.push({q:'Auto-route: Civil matter detected', a:'Civil Referral'});
+    return finish('civil');
+  }
+
+  // ============================================================
+  // 4. COMPLAINANT REFUSAL CHECK — runs first for all ADR-eligible cases
+  // ============================================================
+  if (cat === 'petty' || cat === 'economic') {
+    if (S.complainant_willingness === 'Wants case taken to OB (refuses ADR)') {
+      trail.push({q:'Complainant refused ADR — right to formal process under Article 50(9)', a:'Formal Process'});
+      return finish('formal');
+    }
+  }
+
+  // 5. Economic crime
+  if (cat === 'economic') {
+    const value = parseInt(S.value) || 0;
+    const behav = document.getElementById('offender_behaviour').value;
+    const prior = document.getElementById('prior_history').value;
+    const willing = document.getElementById('offender_willingness').value;
+
+    S.offender_behaviour = behav;
+    S.prior_history = prior;
+    S.offender_willingness = willing;
+
+    if (value >= 50000) {
+      trail.push({q:'Auto-route: Economic crime value >= KES 50,000', a:'Formal Process'});
+      return finish('formal');
+    }
+    if (prior === 'Repeat offender') {
+      trail.push({q:'Auto-route: Repeat offender', a:'Formal Process'});
+      return finish('formal');
+    }
+    if (willing === 'Unwilling') {
+      trail.push({q:'Auto-route: Offender unwilling', a:'Formal Process'});
+      return finish('formal');
+    }
+    if (behav === 'Resisted Arrest' || behav === 'Obstructed Officer') {
+      trail.push({q:'Auto-route: Offender resisted arrest / obstructed officer', a:'Formal Process'});
+      return finish('formal');
+    }
+    if (!behav || !prior || !willing) {
+      alert('Please complete all ADR Suitability Assessment fields for economic crimes.');
+      return;
+    }
+    trail.push({q:'Economic crime — value < KES 50,000, first-time, willing, cooperative', a:'Community ADR'});
+    return finish('adr');
+  }
+
+  // 6. Petty
+  if (cat === 'petty') {
+    const behav = document.getElementById('offender_behaviour').value;
+    const prior = document.getElementById('prior_history').value;
+    const willing = document.getElementById('offender_willingness').value;
+
+    S.offender_behaviour = behav;
+    S.prior_history = prior;
+    S.offender_willingness = willing;
+
+    if (behav === 'Resisted Arrest' || behav === 'Obstructed Officer') {
+      trail.push({q:'Auto-route: Offender resisted arrest / obstructed officer', a:'Formal Process'});
+      return finish('formal');
+    }
+    if (prior === 'Repeat offender') {
+      trail.push({q:'Auto-route: Repeat offender', a:'Formal Process'});
+      return finish('formal');
+    }
+    if (willing === 'Unwilling') {
+      trail.push({q:'Auto-route: Offender unwilling', a:'Formal Process'});
+      return finish('formal');
+    }
+    if (!behav || !prior || !willing) {
+      alert('Please complete all ADR Suitability Assessment fields for petty offences.');
+      return;
+    }
+    trail.push({q:'ADR suitability check passed', a:'Community ADR'});
+    return finish('adr');
+  }
+
+  // 7. Other → triage questions
+  step = 0;
+  document.getElementById('p-intake').classList.add('hidden');
+  document.getElementById('p-triage').classList.remove('hidden');
+  render();
+}
+
+function getAgeBand(age) {
+  if (age <= 0) return 'Not stated';
+  if (age < 12) return 'Child (under 12)';
+  if (age < 18) return 'Minor (12–17)';
+  if (age < 25) return 'Youth (18–24)';
+  if (age < 65) return 'Adult (25–64)';
+  return 'Elderly (65+)';
+}
+
+// ============================================================
+// TRIAGE QUESTIONS (only for "Other")
+// ============================================================
+const Q = [
+ {id:'civil',q:'Is this in substance a civil, family, or land dispute framed in criminal language?',
+  help:'Unpaid debt, boundary dispute, domestic argument without violence.',
+  opts:[
+      {t:'Yes — it is a civil or family or land matter',s:'Route to civil referral.',v:'civil'},
+      {t:'No — genuinely a criminal complaint',s:'Proceed to ADR suitability check.',v:'next'}
+  ]},
+ {id:'adr',q:'Are the parties known to each other, is the value low, and can the harm be met by restitution or apology?',
+  help:'Article 159(2)(c) forum for community-level resolution.',
+  opts:[
+      {t:'Yes — suitable for community ADR',s:'Route to chief or baraza with 14-day review.',v:'adr'},
+      {t:'No — not suitable.',s:'Route to formal criminal process and OB entry.',v:'formal'}
+  ]}
+];
+
+function render(){
+  for(let i=0;i<2;i++){
+    const e=document.getElementById('ps'+i);
+    if(e) e.className='pstep'+(i<step?' done':i===step?' active':'');
+  }
+  const q = Q[step];
+  document.getElementById('qnum').textContent = 'QUESTION ' + (step+1) + ' OF 2';
+  document.getElementById('qtext').textContent = q.q;
+  document.getElementById('qhelp').textContent = q.help;
+  const box = document.getElementById('opts'); box.innerHTML = '';
+  q.opts.forEach(o=>{
+    const b = document.createElement('button'); b.type='button'; b.className='opt';
+    b.innerHTML = '<strong>'+o.t+'</strong><span>'+o.s+'</span>';
+    b.onclick = ()=>answer(q,o); box.appendChild(b);
+  });
+}
+
+function answer(q,o){
+  trail.push({q:q.q, a:o.t.split('—')[0].trim()});
+  if(o.v==='civil') return finish('civil');
+  if(o.v==='adr') return finish('adr');
+  if(o.v==='formal') return finish('formal');
+  step++; render();
+}
+
+const R = {
+ child:{cls:'oc-stop',label:'CHILD UNDER 12',title:'Child Protection Referral',body:'A child under 12 years cannot be arrested, charged, or diverted. The Children Act 2022 mandates protection, not prosecution.',acts:['Do NOT arrest or detain the child.','Immediately inform the parent or guardian.','Inform the Children\'s Officer within 24 hours.','Remove to a place of safety if the child is in need of care and protection.','Do NOT make an Occurrence Book entry as an accused person.','Log the decision.'],route:'CHILD PROTECTION',ob:'NO',needsConsent:false,needsReferral:true},
+ stop:{cls:'oc-stop',label:'SAFEGUARD GATE — DIVERSION BLOCKED',title:'Formal Process with Protection',
+   body:'This matter falls inside the Article 159(3) safeguard. It must not be routed to ADR.',
+   acts:['Proceed to Occurrence Book entry and formal charge.','Refer the complainant to protection services immediately.','Where a child is involved, notify the Children\'s Officer and Probation Officer.','Log the decision.'],route:'FORMAL + PROTECTION',ob:'YES',needsConsent:false,needsReferral:false},
+ formal:{cls:'oc-formal',label:'ROUTE 1 — FORMAL CRIMINAL PROCESS',title:'Proceed to Charge',
+   body:'On assessment, this matter meets the threshold for formal criminal prosecution.',
+   acts:['Make the Occurrence Book (OB) entry.','Proceed to charge under the applicable legal framework.','Log the triage decision.'],route:'FORMAL PROCESS',ob:'YES',needsConsent:false,needsReferral:false},
+ civil:{cls:'oc-civil',label:'ROUTE 2 — CIVIL REFERRAL',title:'Not a Criminal Matter',
+   body:'In substance this is a civil, family, or land dispute framed in criminal terms. No Occurrence Book entry is made.',
+   acts:[],route:'CIVIL REFERRAL',ob:'NO',needsConsent:true,needsReferral:true},
+ adr:{cls:'oc-adr',label:'ROUTE 3 — COMMUNITY ADR (ARTICLE 159(2)(c))',title:'Divert to Community Resolution',
+   body:'Parties are known to each other, value is low, and harm can be met by restitution or apology.',
+   acts:['Do NOT make an Occurrence Book entry.','Refer to chief or baraza or accredited mediator.','Set a strict review date (14 days).','If ADR fails, formal criminal process remains available.','Log the referral.'],route:'COMMUNITY ADR',ob:'NO',needsConsent:true,needsReferral:false},
+ traffic:{cls:'oc-traffic',label:'ROUTE 4 — TRAFFIC DEPARTMENT',title:'Traffic Offence Handling',
+   body:'This is a minor traffic offence under Section 117 of the Traffic Act.',
+   acts:['Issue a Police Notification of Traffic Offence (instant fine).','OR issue a Notice to Attend Court (NTAC).','Record in the Traffic Department register.','No Occurrence Book entry required for minor traffic offences.'],route:'TRAFFIC DEPARTMENT',ob:'NO',needsConsent:false,needsReferral:true}
+};
+
+// ============================================================
+// FINISH — OUTCOME
+// ============================================================
+async function finish(kind){
+  let r = JSON.parse(JSON.stringify(R[kind]));  // HARDENED: deep clone prevents cross-case mutation
+  let finalRoute = r.route;
+  let followUpDate = '';
+
+  if (kind === 'civil') {
+    const kb = LEGAL_KB[S.offence_detail];
+    if (kb) {
+      r.acts = [
+        'Do NOT make an Occurrence Book entry.',
+        'Refer to: ' + kb.office,
+        'Legal basis: ' + kb.statute,
+        'Required form: ' + kb.form,
+        'Provide complainant with a written referral slip.',
+        'Log the referral for commander review.'
+      ];
+      finalRoute = 'CIVIL REFERRAL — ' + kb.office;
+    }
+  }
+
+  if (kind === 'traffic') {
+    const kb = LEGAL_KB['Minor Traffic Offence (instant fine)'];
+    r.acts = [
+      'Issue a Police Notification of Traffic Offence (instant fine) under Section 117 of the Traffic Act.',
+      'OR issue a Notice to Attend Court (NTAC).',
+      'Record in the Traffic Department register.',
+      'Legal basis: ' + kb.statute
+    ];
+    finalRoute = 'TRAFFIC DEPARTMENT';
+  }
+
+  let vulnActions = [];
+  if (kind === 'child') {
+    // R.child already carries the full child protection action list.
+    // Skip duplication.
+  } else if (S.isChild) {
+    vulnActions = [
+      'CHILD UNDER 12: Cannot be arrested. Inform Children\'s Officer and remove to place of safety if in need of care.',
+      'Immediately inform the parent or guardian.',
+      'Inform the Children\'s Officer within 24 hours.',
+      'Diversion for the child must be proportionate to the offence.',
+      'Prevent the child from having a criminal record.'
+    ];
+    r.body += ' CHILD: This person is under 12 years and is not criminally responsible.';
+  } else if (S.isMinor) {
+    vulnActions = [
+      'MINOR: Children Act 2022 and ODPP Diversion Guidelines apply.',
+      'Best interests of the child are the primary consideration.',
+      'Diversion is mandatory to consider.',
+      'Children\'s Officer must be informed within 24 hours.'
+    ];
+    r.body += ' MINOR: This person is under 18. The Children Act 2022 applies.';
+  }
+  if (S.isVulnerable) {
+    vulnActions = vulnActions.concat([
+      'VULNERABLE PERSON: Public Prosecutor has mandatory obligation to consider diversion.',
+      'Where mental disorder is suspected, take to health facility within 24 hours (Mental Health Act, s.16).',
+      'Provide reasonable accommodation (Persons with Disabilities Act).'
+    ]);
+    r.body += ' VULNERABLE PERSON: ODPP Diversion Policy applies irrespective of offence severity.';
+  }
+  if (vulnActions.length > 0) r.acts = vulnActions.concat(r.acts);
+
+  if (r.ob === 'NO') followUpDate = addDays(today(), 14);
+  S.route = finalRoute;
+  S.kind = kind;
+
+  const rec = {
+    ref: S.ref, station_id: S.station_id, date: today(),
+    offence_category: S.offence_category, offence_detail: S.offence_detail,
+    other_specify: S.other_specify, value: Number(S.value),
+    exact_age: S.exact_age, age_band: S.age_band,
+    gender: S.gender, vulnerability: S.vulnerability,
+    sub_county: S.sub_county,
+    offender_behaviour: S.offender_behaviour || '',
+    prior_history: S.prior_history || '',
+    offender_willingness: S.offender_willingness || '',
+    complainant_willingness: S.complainant_willingness || '',
+    route: finalRoute, kind: kind, ob: r.ob, desc: S.desc,
+    follow_up_date: followUpDate, officer: S.officer,
+    party_details: '[]', resolution_notes: '',
+    created_at: nowISO(), resolved_at: '', override_note: '',
+    anonymous_informant: S.anonymous_informant
+  };
+
+  try {
+    await addRecord(rec);
+  } catch(e) {
+    alert('NOT SAVED: ' + e.message + '\n\nDo not proceed. Retry before continuing.');
+    return;
+  }
+  clearDraft();
+
+  document.getElementById('p-triage').classList.add('hidden');
+  document.getElementById('p-intake').classList.add('hidden');
+  document.getElementById('p-result').classList.remove('hidden');
+  document.getElementById('savedmsg').textContent = '✓ Decision saved — ' + rec.ref + ' · Created: ' + new Date().toLocaleString();
+  const oc = document.getElementById('oc'); oc.className = 'outcome ' + r.cls;
+  document.getElementById('oclabel').textContent = r.label;
+  document.getElementById('octitle').textContent = r.title;
+  document.getElementById('ocbody').textContent = r.body;
+  document.getElementById('ocactions').innerHTML = r.acts.map(a=>'<li>'+a+'</li>').join('');
+  document.getElementById('trail').innerHTML = trail.map(t=>
+    '<div class="trailitem"><div class="tq">'+t.q+'</div><div class="ta">'+t.a+'</div></div>').join('');
+
+  // Per-button visibility, driven by the route's needs flags.
+  // Some routes (e.g. child protection) need referral but not consent, SMS, or email.
+  const showConsent  = !!r.needsConsent;
+  const showReferral = !!r.needsReferral;
+  const showMsg      = showConsent && !!r.needsReferral ? true : !!r.needsConsent;   // messages only for ADR/civil
+  const showPanel    = showConsent || showReferral;
+
+  document.getElementById('p-consent-actions').style.display = showPanel ? 'block' : 'none';
+  const bc = document.getElementById('btn-consent');  if (bc) bc.style.display = showConsent  ? 'inline-block' : 'none';
+  const br = document.getElementById('btn-referral'); if (br) br.style.display = showReferral ? 'inline-block' : 'none';
+  const bs = document.getElementById('btn-sms');      if (bs) bs.style.display = showMsg      ? 'inline-block' : 'none';
+  const be = document.getElementById('btn-email');    if (be) be.style.display = showMsg      ? 'inline-block' : 'none';
+  document.getElementById('p-override').style.display = 'none';
+
+  if (r.needsConsent) {
+    partyCounter = { complainant: 0, respondent: 0 };
+    document.getElementById('complainant-list').innerHTML = '';
+    document.getElementById('respondent-list').innerHTML = '';
+    addParty('complainant');
+    addParty('respondent');
+  }
+  await refresh();
+}
+
+async function submitOverride() {
+  // HARDENED: override may only make the outcome STRICTER (escalate to formal).
+  // It can never bypass the Safeguard Gate or a formal route.
+  const note = document.getElementById('override_note').value.trim();
+  if (note.length < 10) {
+    alert('Provide a reason of at least 10 characters.');
+    return;
+  }
+  try {
+    const res = await fetch(API_URL + '/' + encodeURIComponent(S.ref), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        resolution_notes: 'ESCALATED — OFFICER OVERRIDE: ' + note,
+        override_note: note,
+        ob: 'YES',
+        resolved_at: nowISO(),
+        action: 'ESCALATED'
+      })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    alert('Escalated to formal process. Make the OB entry now.');
+    document.getElementById('p-override').style.display = 'none';
+    await refresh();
+  } catch(e) {
+    alert('Override NOT saved: ' + e.message + '\n\nDo not proceed.');
+  }
+}
+
+async function resetDesk(){
+  document.getElementById('p-result').classList.add('hidden');
+  document.getElementById('p-triage').classList.add('hidden');
+  document.getElementById('p-intake').classList.remove('hidden');
+  document.getElementById('p-consent-actions').style.display = 'none';
+  document.getElementById('p-override').style.display = 'none';
+  document.getElementById('fld-other').style.display = 'none';
+  document.getElementById('fld-adr-fields').style.display = 'none';
+  document.getElementById('ref').value = await refCode();
+  ['offence_category','offence_detail','value','exact_age','desc','gender',
+   'vulnerability','other_specify','offender_behaviour','prior_history',
+   'offender_willingness','complainant_willingness'].forEach(id => {
+     document.getElementById(id).value = '';
+   });
+  document.getElementById('anonymous_informant').checked = false;
+  document.getElementById('age-band-display').textContent = 'Age band will appear here.';
+  document.getElementById('value').disabled = false;
+  document.getElementById('value-hint').textContent = 'Enter 0 where no monetary value applies.';
+  step = 0; trail = []; S = {};
+  clearDraft();
+}
+
+// ============================================================
+// DASHBOARD REFRESH
+// ============================================================
+async function refresh(){
+  const rows = await fetchData();
+  document.getElementById('cnt').textContent = rows.length;
+  if (!document.getElementById('ref').value || document.getElementById('ref').value === 'Select station first') {
+    document.getElementById('ref').value = await refCode();
+  }
+  if(!rows.length){
+    document.getElementById('dash-empty').classList.remove('hidden');
+    document.getElementById('dash-body').classList.add('hidden');
+    return;
+  }
+  document.getElementById('dash-empty').classList.add('hidden');
+  document.getElementById('dash-body').classList.remove('hidden');
+
+  const total = rows.length;
+  const diverted = rows.filter(r=>r.ob==='NO').length;
+  const rate = Math.round(diverted/total*100);
+  const cost = diverted*PER_DIEM*DAYS;
+
+  document.getElementById('m-total').textContent = total;
+  document.getElementById('m-div').textContent = diverted;
+  document.getElementById('m-rate').textContent = rate + '%';
+  document.getElementById('m-cost').textContent = 'KES ' + cost.toLocaleString();
+
+  const kinds = [
+    {k:'adr',n:'Community ADR',c:'#2f7d55'},
+    {k:'civil',n:'Civil Referral',c:'#8a6318'},
+    {k:'formal',n:'Formal Process',c:'#2b5d8a'},
+    {k:'stop',n:'Safeguard — Formal + Protection',c:'#a33232'},
+    {k:'traffic',n:'Traffic Department',c:'#2E7D8E'}
+  ];
+  document.getElementById('barwrap').innerHTML = kinds.map(x=>{
+    const n = rows.filter(r=>r.kind===x.k).length;
+    const p = total?Math.round(n/total*100):0;
+    return '<div class="bar"><div class="bl"><span>'+x.n+'</span><b>'+n+' ('+p+'%)</b></div>'+
+           '<div class="btrack"><div class="bfill" style="width:'+p+'%;background:'+x.c+'"></div></div></div>';
+  }).join('');
+
+  const todayStr = today();
+  const pending = rows.filter(r => r.follow_up_date && r.follow_up_date <= todayStr && !r.resolution_notes);
+  if(pending.length > 0) {
+    document.getElementById('reminder-section').style.display = 'block';
+    document.getElementById('reminder-list').innerHTML = pending.map(r =>
+      '<div style="background:#fff;border:1px solid var(--amber);padding:12px;border-radius:4px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">'+
+        '<div><b style="color:var(--navy)">'+r.ref+'</b> - '+r.offence_detail+'<br>'+
+        '<span style="font-size:12px;color:var(--muted)">Review: '+r.follow_up_date+' | Route: '+r.route+'</span></div>'+
+        '<div style="display:flex;gap:5px;">'+
+          '<button type="button" class="btn btn-s" style="padding:6px 12px;font-size:12px;" onclick="markResolved(\''+r.ref+'\')">✅ Resolve</button>'+
+          '<button type="button" class="btn btn-w" style="padding:6px 12px;font-size:12px;" onclick="escalateCase(\''+r.ref+'\')">⚠️ Escalate</button>'+
+        '</div></div>'
+    ).join('');
+  } else {
+    document.getElementById('reminder-section').style.display = 'none';
+  }
+
+  renderLog(rows);
+}
+
+function renderLog(rows){
+  const pill = {adr:'p-adr',civil:'p-civil',formal:'p-formal',stop:'p-stop',traffic:'p-traffic'};
+  document.getElementById('logbody').innerHTML = rows.map(r=>{
+    let ageDisplay = r.exact_age ? H(r.exact_age) + ' yrs (' + H(r.age_band || '') + ')' : H(r.age_band || '—');
+    if(r.age_band && r.age_band.includes('Minor'))
+      ageDisplay = '<span style="color:#6b3fa0;font-weight:bold;">'+ageDisplay+' \u{1F476}</span>';
+    const pillClass = pill[r.kind] || 'p-formal';
+    return '<tr><td><b>'+H(r.ref)+'</b></td><td>'+H(r.date)+'</td><td>'+H(r.offence_category||'—')+'</td><td>'+H(r.offence_detail)+'</td>'+
+    '<td>'+ageDisplay+'</td><td>'+H(r.gender||'—')+'</td>'+
+    '<td><span class="pill '+pillClass+'">'+H(r.route)+'</span></td>'+
+    '<td>'+(r.ob==='NO'?'<b style="color:#2f7d55">NO</b>':'YES')+'</td>'+
+    '<td>'+(r.follow_up_date?'<b style="color:#8a6318">'+H(r.follow_up_date)+'</b>':'—')+'</td></tr>';
+  }).join('');
+}
+
+function applySearch() {
+  const q = document.getElementById('searchBar').value.toLowerCase().trim();
+  if (!q) { renderLog(allRows); return; }
+  const filtered = allRows.filter(r =>
+    (r.ref || '').toLowerCase().includes(q) ||
+    (r.offence_detail || '').toLowerCase().includes(q) ||
+    (r.officer || '').toLowerCase().includes(q)
+  );
+  renderLog(filtered);
+}
+
+// ============================================================
+// PARTY & PRINT
+// ============================================================
+function addParty(type) {
+  partyCounter[type]++;
+  const container = document.getElementById(type + '-list');
+  const div = document.createElement('div');
+  div.className = 'party-row';
+  div.innerHTML =
+    '<input placeholder="Full Name" class="p-name">'+
+    '<input placeholder="Phone" class="p-phone" style="max-width:120px;">'+
+    '<input placeholder="ID or Email" class="p-email" style="max-width:120px;">'+
+    '<button type="button" class="btn btn-d" style="padding:4px 8px;font-size:11px;" onclick="this.parentElement.remove()">X</button>';
+  container.appendChild(div);
+}
+
+function printHtml(html) {
+  // Iframe-based printing — works in browser AND in PyWebView desktop wrapper.
+  const old = document.getElementById('__print_frame');
+  if (old) old.remove();
+  const f = document.createElement('iframe');
+  f.id = '__print_frame';
+  f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+  document.body.appendChild(f);
+  const d = f.contentWindow.document;
+  d.open(); d.write(html); d.close();
+  f.contentWindow.focus();
+  setTimeout(() => { f.contentWindow.print(); }, 400);
+}
+
+function printConsent() {
+  const content = document.getElementById('printableConsent').cloneNode(true);
+  content.querySelectorAll('input').forEach(input => {
+    const span = document.createElement('span');
+    span.textContent = input.value || '________________________';
+    span.style.cssText = 'display:inline-block;border-bottom:1px solid #000;min-width:120px;padding:2px 5px;margin-right:5px;';
+    input.parentNode.replaceChild(span, input);
+  });
+  const html = '<html><head><title>PDTS Consent</title><style>'
+    + 'body{font-family:sans-serif;line-height:1.6;padding:30px}'
+    + '.signature{display:flex;justify-content:space-between;margin-top:40px}'
+    + '.signature div{width:45%;border-top:1px solid #000;padding-top:5px;text-align:center}'
+    + '.stamp-box{border:2px dashed #ccc;width:120px;height:120px;display:flex;align-items:center;justify-content:center;color:#ccc;font-weight:bold;margin-top:20px;float:right;font-size:10px;text-align:center}'
+    + 'h3{text-align:center;color:#1B3A5C}'
+    + '</style></head><body>' + content.innerHTML + '</body></html>';
+  printHtml(html);
+}
+
+function generateReferralLetter() {
+  // Child protection referral letter (separate template)
+  if (S.kind === 'child' || S.isChild) {
+    const content =
+      '<h3>KENYA POLICE SERVICE — CHILD PROTECTION REFERRAL</h3>' +
+      '<p style="text-align:right"><strong>Date:</strong> ' + today() + '</p>' +
+      '<p><strong>To:</strong><br>The Children\'s Officer<br>Directorate of Children\'s Services</p>' +
+      '<p><strong>From:</strong><br>Kenya Police Service, Front Desk</p>' +
+      '<p><strong>Case Reference:</strong> ' + S.ref + '</p>' +
+      '<p><strong>Nature of Report:</strong> ' + S.offence_detail + '</p>' +
+      '<p><strong>Age of Child:</strong> ' + S.exact_age + ' years</p>' +
+      '<p><strong>Sub-County:</strong> ' + S.sub_county + '</p>' +
+      '<br>' +
+      '<p><strong>Legal Basis:</strong> Sections 8, 32 and 224 of the Children Act, 2022. ' +
+      'A child under 12 years is not criminally responsible and must not be arrested, charged, or diverted.</p>' +
+      '<p><strong>Action Required:</strong> Immediate Children\'s Officer assessment. ' +
+      'Parent/guardian notification. Placement in a place of safety if the child is in need of care and protection.</p>' +
+      '<p><strong>Notice:</strong> This child must NOT be placed in police custody or remand. ' +
+      'No Occurrence Book entry as an accused person has been made.</p>' +
+      '<br>' +
+      '<p>Yours faithfully,</p><br><br>' +
+      '<p>___________________________</p>' +
+      '<p>Officer Name: ' + (S.officer || '________________') + '</p>' +
+      '<p>Police Stamp</p>' +
+      '<div style="margin-top:20px;font-size:10px;color:#666;border-top:1px solid #ccc;padding-top:10px;">' +
+      'Invalid if altered. Case Ref: ' + S.ref + '</div>';
+    w.document.write('<html><head><title>Child Protection Referral</title><style>' +
+      'body{font-family:sans-serif;line-height:1.6;padding:40px;max-width:800px;margin:0 auto}' +
+      'h3{text-align:center;color:#A33232;text-transform:uppercase}p{margin-bottom:10px}' +
+      '</style></head><body>');
+    w.document.write(content);
+    w.document.write('</body></html>');
+    w.document.close();
+    setTimeout(() => { w.focus(); w.print(); }, 500);
+    return;
+  }
+
+  const kb = LEGAL_KB[S.offence_detail];
+  const route = S.route || 'Appropriate civil forum';
+  let content = '';
+  if (kb) {
+    content = '<h3>KENYA POLICE SERVICE — REFERRAL LETTER</h3>'+
+      '<p style="text-align:right"><strong>Date:</strong> '+today()+'</p>'+
+      '<p><strong>To:</strong><br>'+kb.office+'</p>'+
+      '<p><strong>From:</strong><br>Kenya Police Service, Front Desk</p>'+
+      '<p><strong>Case Reference:</strong> '+S.ref+'</p>'+
+      '<p><strong>Nature of Complaint:</strong> '+S.offence_detail+'</p>'+
+      '<p><strong>Legal Basis:</strong> '+kb.statute+'</p>'+
+      '<p><strong>Action Required:</strong> '+kb.action+'</p>'+
+      '<p><strong>Form Required:</strong> '+kb.form+'</p>'+
+      '<p><strong>Contact:</strong> '+kb.contact+'</p>'+
+      '<br><p>This matter has been triaged at the police station front desk. No Occurrence Book entry has been made.</p>'+
+      '<p>You are requested to take over this matter.</p><br>'+
+      '<p>Yours faithfully,</p><br><br>'+
+      '<p>___________________________</p>'+
+      '<p>Officer Name: '+(S.officer||'________________')+'</p>'+
+      '<p>Police Stamp</p>'+
+      '<div style="margin-top:20px;font-size:10px;color:#666;border-top:1px solid #ccc;padding-top:10px;">Invalid if altered. Case Ref: '+S.ref+'</div>';
+  } else {
+    content = '<h3>KENYA POLICE SERVICE — REFERRAL LETTER</h3>'+
+      '<p style="text-align:right"><strong>Date:</strong> '+today()+'</p>'+
+      '<p><strong>To:</strong><br>'+route+'</p>'+
+      '<p><strong>Case Reference:</strong> '+S.ref+'</p>'+
+      '<p><strong>Nature of Complaint:</strong> '+S.offence_detail+'</p>'+
+      '<p>This matter has been triaged and referred to your office.</p>'+
+      '<br><p>Yours faithfully,</p><br><br>'+
+      '<p>___________________________</p>'+
+      '<p>Officer Name: '+(S.officer||'________________')+'</p><p>Police Stamp</p>';
+  }
+  printHtml('<html><head><title>PDTS Referral</title><style>body{font-family:sans-serif;line-height:1.6;padding:40px;max-width:800px;margin:0 auto}h3{text-align:center;color:#1B3A5C;text-transform:uppercase}p{margin-bottom:10px}</style></head><body>' + content + '</body></html>');
+}
+
+function generateConsent() {
+  document.getElementById('c-ref').textContent = S.ref;
+  document.getElementById('c-ref-footer').textContent = S.ref;
+  document.getElementById('c-date').textContent = today();
+  document.getElementById('c-offence').textContent = S.offence_detail;
+  document.getElementById('c-route').textContent = S.route;
+  document.getElementById('consentModal').classList.remove('hidden');
+}
+
+function closeModal(e) {
+  if(e) { e.preventDefault(); e.stopPropagation(); }
+  const m = document.getElementById('consentModal');
+  m.classList.add('hidden'); m.style.display = 'none';
+}
+
+function sendSMS() {
+  const p = prompt("Phone number:");
+  if(!p) return;
+  window.location.href = 'sms:'+p+'?body='+encodeURIComponent('PDTS Reminder: Case '+S.ref+' routed to '+S.route+'. Attend within 14 days.');
+}
+
+function sendEmail() {
+  const e = prompt("Email address:");
+  if(!e) return;
+  window.location.href = 'mailto:'+e+'?subject='+encodeURIComponent('PDTS Case '+S.ref)+'&body='+encodeURIComponent('Case '+S.ref+' routed to '+S.route+'. Attend mediation within 14 days.');
+}
+
+// ============================================================
+// RESOLUTION
+// ============================================================
+const RESOLUTION_CATEGORIES = [
+  'Agreement reached','Restitution paid','Respondent no-show',
+  'Complainant withdrew','Mediation failed','Referred to formal process','Other'
+];
+
+async function escalateCase(ref) {
+  const reason = prompt("Reason for escalation:");
+  if(reason === null) return;
+  const cat = prompt("Resolution category:\n" + RESOLUTION_CATEGORIES.map((c,i) => (i+1)+'. '+c).join('\n'));
+  const catName = RESOLUTION_CATEGORIES[parseInt(cat)-1] || 'Other';
+  await updateRecord(ref, 'ESCALATED — ' + catName + ': ' + reason);
+  alert('Case ' + ref + ' escalated.');
+  await refresh();
+}
+
+async function markResolved(ref) {
+  const cat = prompt("Resolution category:\n" + RESOLUTION_CATEGORIES.map((c,i) => (i+1)+'. '+c).join('\n'));
+  if(cat === null) return;
+  const catName = RESOLUTION_CATEGORIES[parseInt(cat)-1] || 'Other';
+  const notes = prompt("Additional notes (optional):") || '';
+  await updateRecord(ref, 'RESOLVED — ' + catName + ': ' + notes);
+  alert('Case ' + ref + ' resolved.');
+  await refresh();
+}
+
+// ============================================================
+// EXPORTS
+// ============================================================
+async function exportCSV(){
+  const rows = await fetchData();
+  if(!rows.length){ alert('No records.'); return; }
+  const head = ['Case Ref','Station ID','Date','Offence Category','Offence Detail','Other Specify','Value (KES)','Exact Age','Age Band','Gender','Vulnerability','Sub-County','Offender Behaviour','Prior History','Offender Willingness','Complainant Willingness','Route','OB Entry','Description','Follow-up Date','Resolution Notes','Created At','Resolved At','Override Note','Anonymous Informant'];
+  const esc = v => {
+    let s = String(v == null ? '' : v);
+    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+    return '"' + s.replace(/"/g, '""') + '"';
+  };
+  const csv = [head.map(esc).join(',')].concat(
+    rows.map(r => [r.ref,r.station_id,r.date,r.offence_category,r.offence_detail,r.other_specify,r.value,r.exact_age,r.age_band,r.gender,r.vulnerability,r.sub_county,r.offender_behaviour,r.prior_history,r.offender_willingness,r.complainant_willingness,r.route,r.ob,r.desc,r.follow_up_date,r.resolution_notes,r.created_at,r.resolved_at,r.override_note,r.anonymous_informant].map(esc).join(','))
+  ).join('\n');
+  const res = await fetch('/api/save_file', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({filename: 'PDTS_Full_Log_' + today() + '.csv', content: csv})
+  });
+  if (res.ok) {
+    const j = await res.json();
+    alert('Saved to: ' + j.path);
+  } else {
+    alert('Failed to save file.');
+  }
+}
+
+async function exportStationRegister(){
+  const rows = await fetchData();
+  if(!rows.length){ alert('No records.'); return; }
+  const total = rows.length;
+  const diverted = rows.filter(r=>r.ob==='NO').length;
+  const formal = rows.filter(r=>r.ob==='YES').length;
+  const repeatOffenders = rows.filter(r=>r.prior_history==='Repeat offender').length;
+  const resistant = rows.filter(r=>r.offender_behaviour==='Resisted Arrest'||r.offender_behaviour==='Obstructed Officer').length;
+  const complainantRefusals = rows.filter(r=>r.complainant_willingness && r.complainant_willingness.includes('refuses')).length;
+  const resolved = rows.filter(r=>r.resolution_notes && r.resolution_notes.startsWith('RESOLVED')).length;
+  const pending = rows.filter(r=>r.follow_up_date && !r.resolution_notes).length;
+
+  const offences = {};
+  rows.forEach(r=>{
+    const key = r.offence_detail || 'Unknown';
+    if(!offences[key]) offences[key] = 0;
+    offences[key]++;
+  });
+
+  const esc = v => {
+    let s = String(v == null ? '' : v);
+    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+    return '"' + s.replace(/"/g, '""') + '"';
+  };
+  let csv = '"Station Register — Policy Data"\n"Station:","'+ (station ? station.name : 'All') +'"\n\n';
+  csv += '"Metric","Value"\n';
+  csv += '"Total Complaints Triaged","'+total+'"\n';
+  csv += '"Diverted Before OB Entry","'+diverted+'"\n';
+  csv += '"Formal Process (OB Entry)","'+formal+'"\n';
+  csv += '"Repeat Offenders","'+repeatOffenders+'"\n';
+  csv += '"Resisted Arrest / Obstructed Officer","'+resistant+'"\n';
+  csv += '"Complainant Refused ADR","'+complainantRefusals+'"\n';
+  csv += '"Cases Resolved","'+resolved+'"\n';
+  csv += '"Pending 14-Day Review","'+pending+'"\n\n';
+  csv += '"Offence Breakdown","Count"\n';
+  Object.keys(offences).sort().forEach(k => { csv += esc(k)+',"'+offences[k]+'"\n'; });
+
+  const res = await fetch('/api/save_file', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({filename: 'PDTS_Station_Register_' + today() + '.csv', content: csv})
+  });
+  if (res.ok) {
+    const j = await res.json();
+    alert('Saved to: ' + j.path);
+  } else {
+    alert('Failed to save file.');
+  }
+}
+
+async function backupDatabase() {
+  if (!confirm('Create a backup of the current database?\n\nA copy will be saved next to the app.')) return;
+  try {
+    const res = await fetch('/api/backup', { method: 'POST' });
+    const j = await res.json();
+    if (res.ok && j.status === 'success') {
+      alert('Backup created:\n' + j.path + '\n\n' + (j.size ? ('Size: ' + (j.size / 1024).toFixed(1) + ' KB') : ''));
+    } else {
+      alert('Backup failed: ' + (j.message || res.status));
+    }
+  } catch (e) {
+    alert('Backup failed: ' + e.message);
+  }
+}
+
+async function clearAll(){
+  const confirm1 = prompt('WARNING: This will delete ALL records permanently.\n\nType DELETE to confirm:');
+  if (confirm1 !== 'DELETE') { alert('Cancelled.'); return; }
+  try { await fetch(API_URL, {method:'DELETE'}); await refresh(); alert('All records cleared.'); }
+  catch(e) { alert('Failed to clear.'); }
+}
+
+
+
+
+
+
+
+// ===== PRINT OVERRIDES v2 =====
+// Printing happens via /api/print_html (saved to temp file, opened in browser)
+// which avoids the WebView2 "Out of Memory" crash.
+
+async function printHtml(html) {
+  try {
+    const res = await fetch('/api/print_html', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({html: html})
+    });
+    if (!res.ok) {
+      const t = await res.text().catch(() => '');
+      alert('Print failed: HTTP ' + res.status + ' ' + t);
+    }
+  } catch (e) {
+    alert('Print failed: ' + e.message);
+  }
+}
+
+function printConsent() {
+  const content = document.getElementById('printableConsent').cloneNode(true);
+  content.querySelectorAll('input').forEach(input => {
+    const span = document.createElement('span');
+    span.textContent = input.value || '________________________';
+    span.style.cssText = 'display:inline-block;border-bottom:1px solid #000;min-width:120px;padding:2px 5px;margin-right:5px;';
+    input.parentNode.replaceChild(span, input);
+  });
+  const doc = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>PDTS Consent</title>'
+    + '<style>@page{size:A4;margin:12mm}'
+    + 'body{font-family:sans-serif;line-height:1.6;padding:0;margin:0}'
+    + '.signature{display:flex;justify-content:space-between;margin-top:40px}'
+    + '.signature div{width:45%;border-top:1px solid #000;padding-top:5px;text-align:center}'
+    + '.stamp-box{border:2px dashed #ccc;width:120px;height:120px;display:flex;align-items:center;justify-content:center;color:#ccc;font-weight:bold;margin-top:20px;float:right;font-size:10px;text-align:center}'
+    + 'h3{text-align:center;color:#1B3A5C}'
+    + '</style></head><body>' + content.innerHTML + '</body></html>';
+  printHtml(doc);
+}
+
+// ---- Robust LEGAL_KB lookup ----
+function lookupKB(name) {
+  if (typeof LEGAL_KB === 'undefined' || !name) return null;
+  const key = String(name).trim();
+  // exact
+  if (LEGAL_KB[key]) return LEGAL_KB[key];
+  // case-insensitive exact
+  const lower = key.toLowerCase();
+  for (const k of Object.keys(LEGAL_KB)) {
+    if (k.toLowerCase() === lower) return LEGAL_KB[k];
+  }
+  // substring match (longest wins)
+  let best = null, bestLen = 0;
+  for (const k of Object.keys(LEGAL_KB)) {
+    const lk = k.toLowerCase();
+    if (lower.includes(lk) || lk.includes(lower)) {
+      if (k.length > bestLen) { best = LEGAL_KB[k]; bestLen = k.length; }
+    }
+  }
+  return best;
+}
+
+async function generateReferralLetter() {
+  // ---------- Child protection (under 12) ----------
+  if (S.kind === 'child' || S.isChild) {
+    const c = '<h3>KENYA POLICE SERVICE &mdash; CHILD PROTECTION REFERRAL</h3>'
+      + '<p style="text-align:right"><strong>Date:</strong> ' + today() + '</p>'
+      + '<p><strong>To:</strong><br>The Children&rsquo;s Officer<br>Directorate of Children&rsquo;s Services</p>'
+      + '<p><strong>From:</strong><br>Kenya Police Service, Front Desk</p>'
+      + '<p><strong>Case Reference:</strong> ' + S.ref + '</p>'
+      + '<p><strong>Nature of Report:</strong> ' + S.offence_detail + '</p>'
+      + '<p><strong>Age of Child:</strong> ' + S.exact_age + ' years</p>'
+      + '<p><strong>Sub-County:</strong> ' + S.sub_county + '</p><br>'
+      + '<p><strong>Legal Basis:</strong> Sections 8, 32 and 224 of the Children Act, 2022. '
+      + 'A child under 12 is not criminally responsible and must not be arrested, charged, or diverted.</p>'
+      + '<p><strong>Action Required:</strong> Immediate Children&rsquo;s Officer assessment. '
+      + 'Parent or guardian notification. Placement in a place of safety if the child is in need of care and protection.</p>'
+      + '<p><strong>Notice:</strong> This child must NOT be placed in police custody or remand. '
+      + 'No Occurrence Book entry as an accused person has been made.</p>'
+      + '<br><p>Yours faithfully,</p><br><br>'
+      + '<p>___________________________</p>'
+      + '<p>Officer Name: ' + (S.officer || '________________') + '</p>'
+      + '<p>Police Stamp</p>'
+      + '<div style="margin-top:20px;font-size:10px;color:#666;border-top:1px solid #ccc;padding-top:10px;">'
+      + 'Invalid if altered. Case Ref: ' + S.ref + '</div>';
+    printHtml('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Child Protection Referral</title>'
+      + '<style>@page{size:A4;margin:12mm}'
+      + 'body{font-family:sans-serif;line-height:1.6;padding:0;margin:0}'
+      + 'h3{text-align:center;color:#A33232;text-transform:uppercase}p{margin-bottom:10px}'
+      + '</style></head><body>' + c + '</body></html>');
+    return;
+  }
+
+  // ---------- Civil referral (robust lookup) ----------
+  const kb = lookupKB(S.offence_detail);
+  let content = '';
+
+  if (kb) {
+    content = '<h3>KENYA POLICE SERVICE &mdash; REFERRAL LETTER</h3>'
+      + '<p style="text-align:right"><strong>Date:</strong> ' + today() + '</p>'
+      + '<p><strong>To:</strong><br>' + kb.office + '</p>'
+      + '<p><strong>From:</strong><br>Kenya Police Service, Front Desk</p>'
+      + '<p><strong>Case Reference:</strong> ' + S.ref + '</p>'
+      + '<p><strong>Nature of Complaint:</strong> ' + S.offence_detail + '</p>'
+      + '<p><strong>Legal Basis:</strong> ' + kb.statute + '</p>'
+      + '<p><strong>Action Required:</strong> ' + kb.action + '</p>'
+      + '<p><strong>Form Required:</strong> ' + kb.form + '</p>'
+      + '<p><strong>Contact:</strong> ' + kb.contact + '</p>'
+      + '<br><p>This matter has been triaged at the police station front desk. No Occurrence Book entry has been made.</p>'
+      + '<p>You are requested to take over this matter.</p><br>'
+      + '<p>Yours faithfully,</p><br><br>'
+      + '<p>___________________________</p>'
+      + '<p>Officer Name: ' + (S.officer || '________________') + '</p>'
+      + '<p>Police Stamp</p>'
+      + '<div style="margin-top:20px;font-size:10px;color:#666;border-top:1px solid #ccc;padding-top:10px;">'
+      + 'Invalid if altered. Case Ref: ' + S.ref + '</div>';
+  } else {
+    content = '<h3>KENYA POLICE SERVICE &mdash; REFERRAL LETTER</h3>'
+      + '<p style="text-align:right"><strong>Date:</strong> ' + today() + '</p>'
+      + '<p><strong>To:</strong><br>' + (S.route || 'Appropriate civil authority') + '</p>'
+      + '<p><strong>Case Reference:</strong> ' + S.ref + '</p>'
+      + '<p><strong>Nature of Complaint:</strong> ' + S.offence_detail + '</p>'
+      + '<p>This matter has been triaged and referred to your office for appropriate action.</p>'
+      + '<br><p>Yours faithfully,</p><br><br>'
+      + '<p>___________________________</p>'
+      + '<p>Officer Name: ' + (S.officer || '________________') + '</p>'
+      + '<p>Police Stamp</p>';
+  }
+
+  printHtml('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>PDTS Referral</title>'
+    + '<style>@page{size:A4;margin:12mm}'
+    + 'body{font-family:sans-serif;line-height:1.6;padding:0;margin:0}'
+    + 'h3{text-align:center;color:#1B3A5C;text-transform:uppercase}p{margin-bottom:10px}'
+    + '</style></head><body>' + content + '</body></html>');
+}
+// ===== END PRINT OVERRIDES v2 =====
+
+</script>
+</body>
+</html>
