@@ -1,7 +1,8 @@
 # PDTS — Pre-Arrest Diversion Tracking System
 
-**A front-desk triage tool for Kenyan police stations.**
-Routes petty, civil, and traffic matters away from the criminal justice system — before an Occurrence Book entry is made.
+**A front-desk triage tool for Kenyan police stations.** Routes petty, civil, and traffic matters away from the criminal justice system — before an Occurrence Book entry is made.
+
+Kenya remands nearly 55,000 people in facilities built for 34,000. Seventy percent of those cases are petty offences the ODPP has already stated should be diverted. PDTS is the missing front-desk tool that makes the policy work in practice.
 
 ---
 
@@ -37,6 +38,22 @@ PDTS is a lightweight, offline-first desktop application deployed at the police 
 | **Formal Process** | Offender resisted arrest, repeat offender, unwilling offender, complainant refuses ADR, unlisted offence, value above cap | Occurrence Book entry, formal charge. |
 
 **Disqualifiers override diversion and route to formal process automatically:** resisted arrest, obstructed officer, repeat offender, unwilling offender, complainant refusal (Article 50(9)), value above statutory cap, blocked offence types.
+
+---
+
+## Screenshots
+
+**Triage Desk — intake and outcome**
+
+![PDTS Triage Outcome](PDTS1.png)
+
+**Commander's View — live dashboard**
+
+![PDTS Commander View](PDTS2.png)
+
+**Generated referral letter**
+
+![PDTS Referral Letter](PDTS3.png)
 
 ---
 
@@ -86,16 +103,16 @@ The system runs on any Windows station computer with no internet connection. Dat
 ## Installation
 
 Run from source:
- 
+
     pip install flask flask-cors pywebview
     python launch_pdts.py
 
-Build the standalone .exe:
+Build the standalone `.exe`:
 
     pip install pyinstaller
     python build_exe.py
 
-The executable is written to dist/PDTS.exe. The SQLite database (pdts.db) is created next to it on first run.
+The executable is written to `dist/PDTS.exe`. The SQLite database (`pdts.db`) is created next to it on first run.
 
 ---
 
@@ -122,11 +139,11 @@ The executable is written to dist/PDTS.exe. The SQLite database (pdts.db) is cre
 ## Author
 
 **Samwel K. Simotwo**
-Social Welfare Officer Intern, Bungoma Main Prison
+Social Welfare Officer, Bungoma Main Prison
 Creator of PDTS
 
 ---
 
 ## License
 
-MIT — use it, fork it, build on it. Credit required.
+MIT — use it, fork it, build on it. Credit required. See [LICENSE](LICENSE).
